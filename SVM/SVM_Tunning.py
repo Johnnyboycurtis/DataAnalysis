@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import cycle, product
@@ -15,16 +15,28 @@ from sklearn.preprocessing import label_binarize
 from scipy import interp
 
 # Import some data to play with
-iris = pd.read_csv("/home/jonathan/Documents/iris.csv")
-iris.columns = ['SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth', 'Species']
 
-y, X = patsy.dmatrices(data=iris, formula_like="Species ~ SepalLength + SepalWidth + PetalLength + PetalWidth")
+df = pd.read_csv("../data/diamonds.csv", index_col=0)
 
-# some weights
-w = {1: 1.0, 2: 1.9, 3: 1.1}
+# Recode categorical variables to numeric variables for SVM
+Cuts = {'Fair': 0,
+ 'Good': 1,
+ 'Ideal': 2,
+ 'Premium': 3,
+ 'Very Good': 4}
 
-# Add noisy features to make the problem harder
-random_state = np.random.RandomState(0)
+df['cut'] = df.cut.map(Cuts)
+
+
+# some weights (arbitrary)
+w = {0: 1.029847979236188357,
+ 1: 1.090952910641453472,
+ 2: 1.39953652206154988,
+ 3: 1.25567296996662958,
+ 4: 1.22398961809417872}
+
+
+y, X = patsy.dmatrices(data=df, formula_like='cut ~ carat + color + clarity + depth + table + price + x + y + z')
 
 
 # shuffle and split training and test sets
@@ -32,13 +44,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5,
                                                     random_state=0)
 
 # Learn to predict each class against the other
-classifier = svm.LinearSVC(C= 7, dual=False, class_weight=w)
-y_score = classifier.fit(X_train, y_train).decision_function(X_test)
+start = time.time()
+model = svm.SVC(C= 7,  class_weight=w)
+classifier = model.fit(X_train, y_train)
+y_score = classifier.decision_function(X_test)
+end = time.time()
 
-y_mat_test = label_binarize(y_test, classes=[1, 2, 3])
+print("Minutes to train", (end-start)/60 ) ## can take about 4 mins
+
+y_mat_test = label_binarize(y_test, classes=[0, 1, 2, 3, 4])
 
 # Compute ROC curve and ROC area for each class
-n_classes = 3
+n_classes = 5
 fpr = dict()
 tpr = dict()
 roc_auc = dict()
@@ -163,10 +180,10 @@ plt.show()
 
 from sklearn.metrics import confusion_matrix
 
-y_pred = classifier.fit(X_train, y_train).predict(X_test)
+y_pred = classifier.predict(X_test)
 
 #class_names = {1: "setosa",  2:"versicolor", 3:"virginica"}
-class_names = ["setosa",  "versicolor", "virginica"]
+class_names = list(Cuts.keys())
 
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
@@ -206,6 +223,11 @@ def plot_confusion_matrix(cm, classes,
 cnf_matrix = confusion_matrix(y_test, y_pred)
 np.set_printoptions(precision=2)
 
+
+overall_precision = cnf_matrix*np.eye(N=5)  / cnf_matrix.sum(axis = 0)
+print("precision per class: ", overall_precision)
+
+
 # Plot non-normalized confusion matrix
 plt.figure()
 plot_confusion_matrix(cnf_matrix, classes=class_names,
@@ -229,6 +251,7 @@ plt.show()
 # some results from choosing to use optimal threshold
 # you lose some accuracy, but gain a drop in false positives
 results = []
+precision = dict()
 for i in range(n_classes):
     yhat = y_score[:, i]
     ytest = y_mat_test[:, i]
@@ -236,6 +259,13 @@ for i in range(n_classes):
     vals = (yhat >= test).astype(float)
     results.append(vals)
     print(np.mean(vals == ytest))
+    ind = np.where(vals == 1.0)
+    precision[i] = np.sum(vals[ind] == ytest[ind]) / np.sum(vals[ind])
+    print("class {}".format(class_names[i]), "precision: ", precision[i])
+
+
+
+
 
 
 ## please refer to: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1444894/
