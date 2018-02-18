@@ -37,7 +37,7 @@ model = Sequential(name = 'Regression')
 model.add(Dense(units = 10, input_dim = 1, activation='relu'))
 model.add(Dense(units = 10, activation='relu'))
 model.add(Dense(1)) ## output layer!
-model.compile(loss='mean_squared_error', optimizer='sgd')
+model.compile(loss='mean_squared_error', optimizer='sgd') 
 
 
 model.fit(x = X, y = y, epochs = 200)
@@ -46,7 +46,26 @@ out = model.predict(x = X)
 
 plt.scatter(X, y)
 plt.scatter(X, out, marker = "+")
-plt.title("MPG ~ WT")
+plt.title("MPG ~ WT (optimizer = sgd)")
 plt.show()
 
 
+del model
+
+
+
+model = Sequential(name = 'Regression')
+model.add(Dense(units = 10, input_dim = 1, activation='relu'))
+model.add(Dense(units = 10, activation='relu'))
+model.add(Dense(1)) ## output layer!
+model.compile(loss='mean_squared_error', optimizer='adadelta') 
+
+
+model.fit(x = X, y = y, epochs = 200)
+
+out = model.predict(x = X)
+
+plt.scatter(X, y)
+plt.scatter(X, out, marker = "+")
+plt.title("MPG ~ WT (optimizer = adadelta)")
+plt.show()
