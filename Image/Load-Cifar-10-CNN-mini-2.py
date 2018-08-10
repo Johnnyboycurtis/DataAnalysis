@@ -88,7 +88,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 # Train the model
 start = time.time()
 model_info = model.fit(train_features, train_labels,
-                       batch_size=32, epochs=2,
+                       batch_size=32, epochs=25, ## 25 epochs is optimal for training
                        validation_data = (test_features, test_labels),
                        verbose=1)
 end = time.time()
