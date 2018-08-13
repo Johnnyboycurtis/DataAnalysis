@@ -17,6 +17,8 @@ Created on Fri Aug 10 09:43:17 2018
 import keras
 from keras.layers import Conv2D, MaxPooling2D, Input, Dense, Flatten, Dropout, Activation #, merge, AveragePooling2D
 from keras.models import Model
+from keras.metrics import categorical_accuracy
+
 
 
 import time
@@ -65,47 +67,69 @@ Adadelta = keras.optimizers.Adadelta()
 print('building regression model')
 
 
-xinput = Input(shape=(32, 32, 3))
-conv1 = Conv2D(filters=64, kernel_size=(2,2), strides=1)(xinput)
-conv1 = MaxPooling2D(pool_size=(3,3), strides=1)(conv1)
+class ResNet18:
+    def __init__(self):
+        num_classes = 10
+        self.conv1 = Conv2D(filters=64, kernel_size=(1,1), strides=1)
+        self.MP1 = MaxPooling2D(pool_size=(3,3), strides=1) # skip from here
+        self.conv2 = Conv2D(filters=64, kernel_size=(1,1), strides=1, padding='same')
+        self.conv3 = Conv2D(filters=128, kernel_size=(1,1), strides=1, padding='same')
+        self.conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1, padding='same')
+        self.conv5 = Conv2D(filters=512, kernel_size=(1,1), strides=1)
+        self.flatten = Flatten()
+        self.MP2 = MaxPooling2D(pool_size=(3,3), strides=2) # replaced avg with max pool
+        self.softmax = Dense(num_classes, activation='softmax')
+        
+        self.build()
+        
+    def build(self):
+        xinput = Input(shape=(32, 32, 3))
+        l1 = self.conv1(xinput)
+        mp1 = self.MP1(l1)
+        l2 = self.conv2(mp1)
+        l3 = self.conv2(l2)
+        l4 = self.conv2(l3)
+        l5 = self.conv2(l4)
+        l6 = self.conv3(l5)
+        l7 = self.conv3(l6)
+        l8 = self.conv3(l7)
+        l9 = self.conv3(l8)
+        l10 = self.conv4(l9)
+        l11 = self.conv4(l10)
+        l12 = self.conv4(l11)
+        l13 = self.conv4(l12)
+        l14 = self.conv5(l13)
+        l15 = self.conv5(l14)
+        l16 = self.conv5(l15)
+        l17 = self.conv5(l16)
+        mp2 = self.MP2(l17)
+        flat = self.flatten(mp2)
+        l18 = self.softmax(flat)
+        model = Model(xinput, l18)
+        
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[categorical_accuracy])
+        self.model = model
+        
+    def summary(self):
+        return self.model.summary()
+        
+    def train(self, x, y):
+        model_info = model.fit(train_features, train_labels, 
+                       batch_size=32, epochs=20, 
+                       validation_data = (val_features, val_labels), 
+                       verbose=1)
+        return model_info
 
-ident = conv1*1
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=1)(conv1)
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=1)(conv2)
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=1)(conv2) # + conv1
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=1)(conv2)
 
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1)(conv2)
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1)(conv3)
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1)(conv3) # + conv2
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1)(conv3)
-
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1)(conv3)
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1)(conv4)
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1)(conv4) # + conv1
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1)(conv4)
-
-conv5 = Conv2D(filters=512, kernel_size=(1,1), strides=1)(conv4)
-#conv5 = Conv2D(filters=512, kernel_size=(2,2), strides=1)(conv5)
-#conv5 = Conv2D(filters=512, kernel_size=(2,2), strides=1)(conv5) # + conv1
-#conv5 = Conv2D(filters=512, kernel_size=(2,2), strides=1)(conv5)
-
-xout = MaxPooling2D(pool_size=(3,3), strides=2)(conv5)
-xout = Flatten()(xout)
-xout = Dense(num_classes, activation='softmax')(xout)
-
-
-model = Model(xinput, xout)
+model = ResNet18()
 print(model.summary())
 
-from keras.metrics import categorical_accuracy
-model.compile(loss='categorical_crossentropy', optimizer=Adadelta, metrics=[categorical_accuracy])
 
 
 # Train the model
 start = time.time()
 model_info = model.fit(train_features, train_labels, 
-                       batch_size=32, epochs=20, 
+                       batch_size=32, epochs=200, 
                        validation_data = (val_features, val_labels), 
                        verbose=1)
 end = time.time()

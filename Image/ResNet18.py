@@ -12,7 +12,6 @@ from keras.models import Model
 
 
 import time
-import matplotlib.pyplot as plt
 import numpy as np
 from keras.utils import np_utils
 
@@ -50,48 +49,48 @@ test_labels = np_utils.to_categorical(test_labels, num_classes)
 
 
 Adadelta = keras.optimizers.Adadelta()
-#rmsprop = keras.optimizers.RMSprop(lr=0.001995, rho=0.95, epsilon=None, decay=0.001)
-
 
 print('building regression model')
-
-
 xinput = Input(shape=(32, 32, 3))
-conv1 = Conv2D(filters=64, kernel_size=(2,2), strides=1)(xinput)
-x1 = MaxPooling2D(pool_size=(3,3), strides=1)(conv1) # skip from here
+l1 = Conv2D(filters=64, kernel_size=(3,3), strides=2)(xinput)
+mp1 = MaxPooling2D(pool_size=(2,2), strides=2)(l1)
+l2 = Conv2D(filters=64, kernel_size=(2,2), strides=2, padding='same')(mp1)
+l3 = Conv2D(filters=64, kernel_size=(2,2), strides=2, padding='same')(l2)
+z = Add()([mp1, l3])
+l4 = Conv2D(filters=64, kernel_size=(2,2), strides=2, padding='same')(z)
+l5 = Conv2D(filters=64, kernel_size=(2,2), strides=2, padding='same')(l4)
+z = Add()([l3, l5])
+l6 = Conv2D(filters=128, kernel_size=(2,2), strides=2, padding='same')(z)
+l7 = Conv2D(filters=128, kernel_size=(2,2), strides=2, padding='same')(l6)
+B = Conv2D(filters=128, kernel_size=(1,1), strides=2)(l5) # project to match sizes
+z = Add()([B, l7]) # can pass
+l8 = Conv2D(filters=128, kernel_size=(2,2), strides=2, padding='same')(l7)
+l9 = Conv2D(filters=128, kernel_size=(2,2), strides=2, padding='same')(l8)
+z = Add()([l7, l9])
+l10 = Conv2D(filters=256, kernel_size=(1,1), strides=2, padding='same')(z)
+l11 = Conv2D(filters=256, kernel_size=(1,1), strides=2, padding='same')(l10)
+B = Conv2D(filters=256, kernel_size=(1,1), strides=2)(l9) # projection to match sizes
+z = Add()([B, l11]) # can pass
+l12 = Conv2D(filters=256, kernel_size=(1,1), strides=2, padding='same')(z)
+l13 = Conv2D(filters=256, kernel_size=(1,1), strides=2, padding='same')(l12)
+z = Add()([l11, l13])
+l14 = Conv2D(filters=512, kernel_size=(1,1), strides=2, padding='same')(z)
+l15 = Conv2D(filters=512, kernel_size=(1,1), strides=2, padding='same')(l14)
+B = Conv2D(filters=512, kernel_size=(1,1), strides=2)(l13) # projection to match sizes
+z = Add()([B, l15]) # can pass
+l16 = Conv2D(filters=512, kernel_size=(1,1), strides=2, padding='same')(l15)
+l17 = Conv2D(filters=512, kernel_size=(1,1), strides=2, padding='same')(l16)
+z = Add()([B, l17])
+mp2 = MaxPooling2D(pool_size=(2,2), strides=2)(z)
+flat = Flatten()(mp2)
+l18 = Dense(10, activation='softmax')(flat)
+model = Model(xinput, l18)
 
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same')(x1)
-x2 = Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same')(conv2)
-z = Add()([x1, x2])
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same')(z) # + conv1; skip
-x3 = Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same')(conv2)
-
-z = Add()([x2, x3])
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1, padding='same')(z)
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1, padding='same')(conv3)
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1, padding='same')(conv3) # + conv2
-conv3 = Conv2D(filters=128, kernel_size=(2,2), strides=1, padding='same')(conv3)
-
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1, padding='same')(conv3)
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1, padding='same')(conv4)
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1, padding='same')(conv4) # + conv1
-conv4 = Conv2D(filters=256, kernel_size=(1,1), strides=1, padding='same')(conv4)
-
-conv5 = Conv2D(filters=512, kernel_size=(1,1), strides=1)(conv4)
-#conv5 = Conv2D(filters=512, kernel_size=(2,2), strides=1)(conv5)
-#conv5 = Conv2D(filters=512, kernel_size=(2,2), strides=1)(conv5) # + conv1
-#conv5 = Conv2D(filters=512, kernel_size=(2,2), strides=1)(conv5)
-
-xout = MaxPooling2D(pool_size=(3,3), strides=2)(conv5)
-xout = Flatten()(xout)
-xout = Dense(num_classes, activation='softmax')(xout)
-
-
-model = Model(xinput, xout)
 print(model.summary())
 
 from keras.metrics import categorical_accuracy
-model.compile(loss='categorical_crossentropy', optimizer=Adadelta, metrics=[categorical_accuracy])
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[categorical_accuracy])
+
 
 
 # Train the model
@@ -105,29 +104,3 @@ end = time.time()
 print("Model took %0.2f seconds to train"%(end - start))
 
 
-
-'''
-xinput = Input(shape=(32, 32, 3))
-conv1 = Conv2D(filters=64, kernel_size=(7,7), strides=2)(xinput)
-conv1 = MaxPooling2D(pool_size=(3,3), strides=2)(conv1)
-
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=2)(conv1)
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=2)(conv2)
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=2)(conv2) # + conv1
-conv2 = Conv2D(filters=64, kernel_size=(3,3), strides=2)(conv2)
-
-conv3 = Conv2D(filters=128, kernel_size=(3,3), strides=2)(conv2)
-conv3 = Conv2D(filters=128, kernel_size=(3,3), strides=2)(conv3)
-conv3 = Conv2D(filters=128, kernel_size=(3,3), strides=2)(conv3) # + conv2
-conv3 = Conv2D(filters=128, kernel_size=(3,3), strides=2)(conv3)
-
-conv4 = Conv2D(filters=256, kernel_size=(3,3), strides=2)(conv3)
-conv4 = Conv2D(filters=256, kernel_size=(3,3), strides=2)(conv4)
-conv4 = Conv2D(filters=256, kernel_size=(3,3), strides=2)(conv4) # + conv1
-conv4 = Conv2D(filters=256, kernel_size=(3,3), strides=2)(conv4)
-
-conv5 = Conv2D(filters=512, kernel_size=(3,3), strides=2)(conv4)
-conv5 = Conv2D(filters=512, kernel_size=(3,3), strides=2)(conv5)
-conv5 = Conv2D(filters=512, kernel_size=(3,3), strides=2)(conv5) # + conv1
-conv5 = Conv2D(filters=512, kernel_size=(3,3), strides=2)(conv5)
-'''
