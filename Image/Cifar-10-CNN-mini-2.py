@@ -7,6 +7,7 @@ if K.backend()=='tensorflow':
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import keras
 from keras.models import Sequential
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.layers import Activation, Flatten, Dense, Dropout
@@ -46,24 +47,24 @@ for i in range(num_classes):
 plt.show()
 
 
-ind = np.random.rand(50000) < 0.35
-val_features = train_features[~ind]
-val_labels = train_labels[~ind]
+#ind = np.random.rand(50000) < 0.35
+#val_features = train_features[~ind]
+#val_labels = train_labels[~ind]
 
-train_features = train_features[ind]
-train_labels = train_labels[ind]
+#train_features = train_features[ind]
+#train_labels = train_labels[ind]
 
-ind = np.random.rand(10000) < 0.30
-test_labels = test_labels[ind]
-test_features = test_features[ind]
+#ind = np.random.rand(10000) < 0.30
+#test_labels = test_labels[ind]
+#test_features = test_features[ind]
 
 
 train_features = train_features.astype('float32')/255
-val_features = val_features.astype('float32')/255
+#val_features = val_features.astype('float32')/255
 test_features = test_features.astype('float32')/255
 # convert class labels to binary class labels
 train_labels = np_utils.to_categorical(train_labels, num_classes)
-val_labels = np_utils.to_categorical(val_labels, num_classes)
+#val_labels = np_utils.to_categorical(val_labels, num_classes)
 test_labels = np_utils.to_categorical(test_labels, num_classes)
 
 
@@ -101,32 +102,40 @@ def accuracy(test_x, test_y, model):
 
 # Define the model
 model = Sequential()
-model.add(Convolution2D(64, (3, 3), padding='same', input_shape=(3, 32, 32)))
+model.add(Convolution2D(64, (4, 4), padding='same', input_shape=(3, 32, 32)))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 model.add(Activation('relu'))
-model.add(Convolution2D(64, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
-model.add(Convolution2D(96, (3, 3), padding='same'))
+model.add(Convolution2D(64, (2, 2), padding='same'))
 model.add(Activation('relu'))
-model.add(Convolution2D(96, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
+model.add(Convolution2D(32, (3, 3), padding='same'))
+model.add(Activation('relu'))
+model.add(Dropout(0.25))
+model.add(Convolution2D(32, (3, 3), padding='same'))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
+model.add(Dropout(0.15))
 model.add(Flatten())
-model.add(Dense(512))
+model.add(Dense(64))
 model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(256))
+model.add(Dropout(0.25))
+model.add(Dense(64))
 model.add(Activation('tanh'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.25))
 model.add(Dense(num_classes, activation='softmax'))
 # Compile the model
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+from keras.metrics import categorical_accuracy
+Adadelta = keras.optimizers.Adadelta()
+
+model.compile(loss='categorical_crossentropy', optimizer=Adadelta, metrics=[categorical_accuracy])
+
+print(model.summary())
 # Train the model
 start = time.time()
 model_info = model.fit(train_features, train_labels, 
-                       batch_size=32, epochs=20, 
+                       batch_size=32, epochs=100, 
                        validation_data = (test_features, test_labels), 
                        verbose=1)
 end = time.time()
