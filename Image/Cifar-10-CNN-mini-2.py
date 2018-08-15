@@ -23,16 +23,6 @@ num_train, img_channels, img_rows, img_cols =  train_features.shape
 num_test, _, _, _ =  test_features.shape
 num_classes = len(np.unique(train_labels))
 
-'''
-import pickle
-
-with open('/home/jonathan/Documents/cifar-10-batches-py/train.pickle', 'wb+') as myfile:
-    pickle.dump((train_features, train_labels), myfile)
-
-with open('/home/jonathan/Documents/cifar-10-batches-py/test.pickle', 'wb+') as myfile:
-    pickle.dump((test_features, test_labels), myfile)
-'''
-
 class_names = ['airplane','automobile','bird','cat','deer',
                'dog','frog','horse','ship','truck']
 fig = plt.figure(figsize=(8,3))
