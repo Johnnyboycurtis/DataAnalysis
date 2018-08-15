@@ -7,7 +7,7 @@ Created on Fri Aug 10 09:43:17 2018
 """
 
 import keras
-from keras.layers import Conv2D, MaxPooling2D, Input, Dense, Flatten, Dropout, Activation, Add
+from keras.layers import Conv2D, MaxPooling2D, Input, Dense, Flatten, Dropout, Activation, Add, BatchNormalization
 from keras.models import Model
 
 
@@ -90,14 +90,14 @@ model = Model(xinput, l18)
 print(model.summary())
 
 from keras.metrics import categorical_accuracy
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[categorical_accuracy])
+model.compile(loss='categorical_crossentropy', optimizer=Adadelta, metrics=[categorical_accuracy])
 
 
 
 # Train the model
 start = time.time()
 model_info = model.fit(train_features, train_labels, 
-                       batch_size=32, epochs=5, 
+                       batch_size=32, epochs=30, 
                        validation_data = (val_features, val_labels), 
                        verbose=1)
 end = time.time()
